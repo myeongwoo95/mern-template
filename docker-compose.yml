@@ -12,4 +12,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: 1234
       MONGO_INITDB_DATABASE: mydb
     volumes:
-      - ./mongodb:/data/db
+      - mongodb-data:/data/db
+
+volumes:
+  mongodb-data:
