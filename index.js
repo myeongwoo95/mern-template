@@ -11,17 +11,18 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true })); // x-www-form-urlencoded를 받을 수 있게 설정
 app.use(bodyParser.json()); // json를 받을 수 있게 설정
 
+// config
+const config = require("./config/key");
+
 // mongoDB
 const mongoose = require("mongoose");
 mongoose
-  .connect("mongodb://root:1234@localhost:27017/?authMechanism=DEFAULT")
+  .connect(config.MONGO_URL)
   .then(() => console.log("MongoDB에 연결되었습니다."))
   .catch((error) => console.log("MongoDB 연결에 실패했습니다.", error));
 
 // controller
-app.listen(port, () => console.log(`Express app listening on port ${port}!`));
-
-app.get("/", (req, res) => res.send("Hello world!!!!!"));
+app.get("/", (req, res) => res.send("Hello world"));
 
 app.post("/register", (req, res) => {
   const user = new User(req.body);
@@ -41,4 +42,8 @@ app.post("/register", (req, res) => {
         err,
       });
     });
+});
+
+app.listen(port, () => {
+  console.log(`Express app listening on port ${port}!`);
 });
