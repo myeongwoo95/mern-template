@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const saltRounds = 10; // salt 길이
+const jwt = require("jsonwebtoken");
+const config = require("../config/key");
 
 // 1. 스키마 정의
 const userSchema = mongoose.Schema({
@@ -9,7 +13,7 @@ const userSchema = mongoose.Schema({
 
   email: {
     type: String,
-    trim: true,
+    trim: true, // 공백 제거
     unique: 1,
   },
 
@@ -40,6 +44,47 @@ const userSchema = mongoose.Schema({
     type: Number,
   },
 });
+
+//비밀번호 암호화
+userSchema.pre("save", function (next) {
+  let user = this;
+
+  // 모든 save에 실행하는 것이 아닌, password가 변경될 때만 실행
+  if (user.isModified("password")) {
+    bcrypt.genSalt(saltRounds, (err, salt) => {
+      if (err) return next(err);
+
+      bcrypt.hash(user.password, salt, (err, hash) => {
+        if (err) return next(err);
+        user.password = hash;
+        next();
+      });
+    });
+  } else {
+    next();
+  }
+});
+
+// 로그인 시 비밀번호 비교
+userSchema.methods.comparePassword = function (plainPassword) {
+  return new Promise((resolve, reject) => {
+    bcrypt.compare(plainPassword, this.password, (err, isMatch) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(isMatch);
+      }
+    });
+  });
+};
+
+// jwt 생성
+userSchema.methods.generateToken = function () {
+  const user = this;
+  const token = jwt.sign({ userId: user._id.toHexString() }, config.SECRET_KEY);
+  user.token = token;
+  return user.save().then(() => token);
+};
 
 // 2. 모델 정의(스키마를 감싸주는 역할)
 const User = mongoose.model("User", userSchema);
