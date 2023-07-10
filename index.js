@@ -1,6 +1,12 @@
 // models
 const { User } = require("./models/User");
 
+// config
+const config = require("./config/key");
+
+// middleware auth
+const { auth } = require("./middleware/auth");
+
 // express.js
 const express = require("express");
 const app = express();
@@ -13,9 +19,6 @@ app.use(bodyParser.json()); // json를 받을 수 있게 설정
 
 // cookie-parser
 const cookieParser = require("cookie-parser");
-
-// config
-const config = require("./config/key");
 
 // mongoDB
 const mongoose = require("mongoose");
@@ -94,6 +97,11 @@ app.post("/api/users/login", (req, res) => {
       return res.status(400).send(err);
     });
 });
+
+// Authentication
+// 파라미터 auth는 controller가 실행되기 전에 실행되는 미들웨어이다.
+// 주로 토큰의 유효성 검사등을
+app.get("/api/users/auth", auth, (req, res) => {});
 
 app.listen(port, () => {
   console.log(`Express app listening on port ${port}!`);

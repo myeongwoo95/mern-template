@@ -65,7 +65,7 @@ userSchema.pre("save", function (next) {
   }
 });
 
-// 로그인 시 비밀번호 비교
+// plainPassword가 encoded password와 동일한지 비교
 userSchema.methods.comparePassword = function (plainPassword) {
   return new Promise((resolve, reject) => {
     bcrypt.compare(plainPassword, this.password, (err, isMatch) => {
@@ -84,6 +84,23 @@ userSchema.methods.generateToken = function () {
   const token = jwt.sign({ userId: user._id.toHexString() }, config.SECRET_KEY);
   user.token = token;
   return user.save().then(() => token);
+};
+
+// jwt 복호화
+userSchema.methods.findByToken = function (token) {
+  return new Promise((resolve, reject) => {
+    let user = this;
+
+    jwt.verify(token, config.SECRET_KEY, function (err, decoded) {
+      user.findOne({ _id: decoded, token: token }, function (err, user) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(user);
+        }
+      });
+    });
+  });
 };
 
 // 2. 모델 정의(스키마를 감싸주는 역할)
