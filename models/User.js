@@ -83,22 +83,29 @@ userSchema.methods.generateToken = function () {
   const user = this;
   const token = jwt.sign({ userId: user._id.toHexString() }, config.SECRET_KEY);
   user.token = token;
+  console.log("token", token);
   return user.save().then(() => token);
 };
 
 // jwt 복호화
-userSchema.methods.findByToken = function (token) {
+userSchema.statics.findByToken = function (token) {
   return new Promise((resolve, reject) => {
     let user = this;
 
     jwt.verify(token, config.SECRET_KEY, function (err, decoded) {
-      user.findOne({ _id: decoded, token: token }, function (err, user) {
-        if (err) {
-          reject(err);
-        } else {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      user
+        .findOne({ _id: decoded.userId, token: token })
+        .then((user) => {
           resolve(user);
-        }
-      });
+        })
+        .catch((err) => {
+          reject(err);
+        });
     });
   });
 };

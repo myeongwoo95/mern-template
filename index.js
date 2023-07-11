@@ -1,8 +1,8 @@
-// models
-const { User } = require("./models/User");
-
 // config
 const config = require("./config/key");
+
+// models
+const { User } = require("./models/User");
 
 // middleware auth
 const { auth } = require("./middleware/auth");
@@ -12,13 +12,16 @@ const express = require("express");
 const app = express();
 const port = 5000;
 
-// body-parser
-const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: true })); // x-www-form-urlencoded를 받을 수 있게 설정
-app.use(bodyParser.json()); // json를 받을 수 있게 설정
-
 // cookie-parser
 const cookieParser = require("cookie-parser");
+
+// body-parser
+const bodyParser = require("body-parser");
+
+// app 설정
+app.use(bodyParser.urlencoded({ extended: true })); // x-www-form-urlencoded를 받을 수 있게 설정
+app.use(bodyParser.json()); // json를 받을 수 있게 설정
+app.use(cookieParser()); // cookie를 관련한 설정
 
 // mongoDB
 const mongoose = require("mongoose");
@@ -29,6 +32,21 @@ mongoose
 
 // controller
 app.get("/", (req, res) => res.send("Hello world"));
+
+// Authentication: 파라미터 auth는 controller가 실행되기 전에 실행되는 미들웨어이다.
+app.get("/api/users/auth", auth, (req, res) => {
+  // 여기까지 미들웨어를 통과해 왔다는 얘기는 Autentication 인증이 완료되었음을 의미
+  res.status(200).json({
+    _id: req.user._id,
+    isAdmin: req.user.role === 0 ? false : true,
+    isAuth: true,
+    email: req.user.email,
+    name: req.user.name,
+    lastname: req.user.lastname,
+    role: req.user.role,
+    image: req.user.image,
+  });
+});
 
 // 회원가입
 app.post("/api/users/register", (req, res) => {
@@ -98,10 +116,17 @@ app.post("/api/users/login", (req, res) => {
     });
 });
 
-// Authentication
-// 파라미터 auth는 controller가 실행되기 전에 실행되는 미들웨어이다.
-// 주로 토큰의 유효성 검사등을
-app.get("/api/users/auth", auth, (req, res) => {});
+app.get("/api/users/logout", auth, (req, res) => {
+  User.findOneAndUpdate({ _id: req.user._id }, { token: "", tokenExp: "" })
+    .then(() => {
+      return res.status(200).send({
+        success: true,
+      });
+    })
+    .catch((err) => {
+      return res.json({ success: false, err });
+    });
+});
 
 app.listen(port, () => {
   console.log(`Express app listening on port ${port}!`);
